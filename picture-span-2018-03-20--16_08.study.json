@@ -1,0 +1,1603 @@
+{
+  "version": [
+    2017,
+    1,
+    6
+  ],
+  "components": {
+    "1": {
+      "id": "1",
+      "type": "lab.flow.Loop",
+      "children": [
+        "5"
+      ],
+      "templateParameters": {
+        "columns": [
+          {
+            "name": "span_length",
+            "type": "string"
+          },
+          {
+            "name": "trial type",
+            "type": "string"
+          },
+          {
+            "name": "",
+            "type": "string"
+          }
+        ],
+        "rows": [
+          [
+            "2",
+            "experimental",
+            ""
+          ],
+          [
+            "2",
+            "experimental",
+            ""
+          ],
+          [
+            "3",
+            "experimental",
+            ""
+          ],
+          [
+            "3",
+            "experimental",
+            ""
+          ],
+          [
+            "4",
+            "experimental",
+            ""
+          ],
+          [
+            "4",
+            "experimental",
+            ""
+          ],
+          [
+            "5",
+            "experimental",
+            ""
+          ],
+          [
+            "5",
+            "experimental",
+            ""
+          ]
+        ]
+      },
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "title": "Picture span task",
+      "_tab": "Content"
+    },
+    "2": {
+      "id": "2",
+      "type": "lab.flow.Loop",
+      "children": [
+        "3"
+      ],
+      "templateParameters": {
+        "columns": [
+          {
+            "name": "picture",
+            "type": "string"
+          }
+        ],
+        "rows": [
+          [
+            "apple"
+          ],
+          [
+            "flag"
+          ],
+          [
+            "comb"
+          ],
+          [
+            "owl"
+          ],
+          [
+            "moon"
+          ],
+          [
+            "pot"
+          ],
+          [
+            "flower"
+          ]
+        ]
+      },
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "Generate span",
+              "message": "before:prepare",
+              "code": "/*\n  This code generates the stimulus sequence manually\n  from the stimuli specified in the loop content.\n  This wouldn't usually be necessary: The loop\n  can sample and shuffle stimuli itself; however,\n  doing it ourselves gives us a bit more control.\n  Specifically, it's (slightly) easier to capture \n  and store the sequence of digits (see below).\n*/\n\n// Subsample the loop parameters by drawing randomly\n// from the loop contents\nthis.options.templateParameters = this.random.sample(\n  this.options.templateParameters,\n  this.aggregateParameters.span_length\n)\n\n// Extract the presented stimuli and store them seperately,\n// as a feature of the overall trial sequence.\nthis.parent.options.parameters.span = \n  this.options.templateParameters.map(\n    function(repetition) { return repetition.picture }\n  )"
+            }
+          ]
+        ]
+      },
+      "title": "Learning phase",
+      "shuffle": false,
+      "_tab": "Content"
+    },
+    "3": {
+      "id": "3",
+      "type": "lab.html.Screen",
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "Disable data logging",
+              "message": "before:prepare",
+              "code": "// We don't need screen-by-screen data for\n// the stimulus presentation\nthis.options.datacommit = false"
+            }
+          ]
+        ]
+      },
+      "title": "Picture presentation",
+      "content": "<main\n  class=\"content-horizontal-center content-vertical-center\"\n>\n  \n  <img src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.picture }.png\">\n\n</main>\n<footer>\n  Please memorize the picture presented above.\n</footer>",
+      "_tab": "Content",
+      "timeout": "1500"
+    },
+    "4": {
+      "id": "4",
+      "type": "lab.html.Screen",
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "Handle button responses",
+              "message": "before:prepare",
+              "code": "// Create an empty array that collects responses\nthis.data.responses = []\n\nconst updateButtons = () => {\n  document\n    .querySelectorAll('button')\n    .forEach(\n      button => button.disabled = \n        this.data.responses.includes(button.attributes.name.value)\n    )\n}\n\n// Setup handler for button clicks\nthis.options.events['click button'] = function(event) {\n  // Which button was clicked?\n  const button = event.currentTarget.attributes.name.value\n\n  // Terminate screen if participant is done,\n  // otherwise log response, deactivate button,\n  // and continue.\n  if (button === 'done') {\n    this.end('done')\n  } else if (button === 'undo') {\n    // Remove last response\n    this.data.responses.pop()\n\n    //Update buttons\n    updateButtons()\n  } else {\n    // Add response to data\n    this.data.responses.push(button)\n    \n     //Update buttons\n    updateButtons()\n  }\n}\n    \nthis.options.parameters.options = this.random.shuffle(\n  ['apple', 'flag', 'comb', 'owl', 'moon', 'pot', 'flower'])"
+            }
+          ],
+          [
+            {
+              "title": "Code veracity of answer",
+              "message": "after:end",
+              "code": "// The response was correct if every presented stimulus\n// matched the corresponding response\n// (JavaScript, sadly, can't directly compare two arrays)\nthis.data.correct = this.aggregateParameters.span.every(\n  (picture, index) => picture === this.data.responses[index]\n)\n// Save veracity of individual positions\nthis.data.correctPositions = this.aggregateParameters.span.map(\n  (picture, index) => picture === this.data.responses[index]\n)"
+            }
+          ]
+        ]
+      },
+      "title": "Recall",
+      "content": "<main class=\"content-horizontal-center content-vertical-center\">\n  <!-- Table styles are specified in the overall study CSS,\n       please see study options. This screen also includes\n       a fair amount of logic, which is visible in the scripts\n       tab. Please be invited to ask the authors if you have\n       any questions!\n  -->\n  <table class=\"table-plain table-span-recall\">\n    <tr>\n      <td>\n        <button name=\"${ parameters.options[0] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[0] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[1] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[1] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[2] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[2] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[3] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[3] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[4] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[4] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[5] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[5] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[6] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[6] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n          \n    </tr>\n    <tr>\n      <td colspan=\"7\">\n        <button name=\"undo\">\n          Undo ?\n        </button>\n        <button name=\"done\">\n          Done &rarr;\n        </button>\n      </td>\n    </tr>\n  </table>\n</main>\n<footer>\n  Please point to the pictures you just saw, in the order they were presented. If your visor was down, please raise it now. <br>\n  When you have chosen all you can remember, please click <kbd>Done</kbd> to continue.\n</footer>",
+      "_tab": "Content"
+    },
+    "5": {
+      "id": "5",
+      "type": "lab.flow.Sequence",
+      "children": [
+        "6",
+        "2",
+        "12",
+        "4"
+      ],
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "title": "Trial sequence for Recall",
+      "_tab": "Content"
+    },
+    "6": {
+      "id": "6",
+      "type": "lab.html.Screen",
+      "responses": {
+        "rows": [
+          [
+            "continue",
+            "click",
+            "button#continue",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "title": "Get-set-go",
+      "content": "<main class=\"content-vertical-center content-horizontal-center\">\n  <div style=\"max-width: 600px\">\n    <h2>Ready?</h2>\n    <p>In a moment, we're going to show you some pictures. Please try to remember them as best you can. You'll be asked to remember them in the order in which you saw the pictures.</p>\n    <p>When you're ready, please press <kbd>Continue</kbd> below.\n  </div>\n</main>\n<footer class=\"content-horizontal-right\">\n  <button id=\"continue\">\n    Continue &rarr;\n  </button>\n</footer>",
+      "_tab": "Content"
+    },
+    "7": {
+      "id": "7",
+      "type": "lab.flow.Loop",
+      "children": [
+        "32"
+      ],
+      "templateParameters": {
+        "columns": [
+          {
+            "name": "picture",
+            "type": "string"
+          },
+          {
+            "name": "trial type",
+            "type": "string"
+          }
+        ],
+        "rows": [
+          [
+            "apple",
+            "picture naming"
+          ],
+          [
+            "flag",
+            "picture naming"
+          ],
+          [
+            "comb",
+            "picture naming"
+          ],
+          [
+            "owl",
+            "picture naming"
+          ],
+          [
+            "moon",
+            "picture naming"
+          ],
+          [
+            "pot",
+            "picture naming"
+          ],
+          [
+            "flower",
+            "picture naming"
+          ]
+        ]
+      },
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "Preload images",
+              "message": "before:prepare",
+              "code": "this.options.media.images = [\r\n  'https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/apple.png',\r\n  'https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/flag.png',\r\n  'https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/comb.png',\r\n  'https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/owl.png',\r\n  'https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/moon.png',\r\n  'https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/pot.png',\r\n  'https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/flower.png'\r\n]"
+            }
+          ]
+        ]
+      },
+      "title": "Picture Naming",
+      "_tab": "Content"
+    },
+    "8": {
+      "id": "8",
+      "type": "lab.html.Screen",
+      "responses": {
+        "rows": [
+          [
+            "yes",
+            "keypress",
+            "",
+            "y"
+          ],
+          [
+            "no",
+            "keypress",
+            "",
+            "n"
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "title": "Picture Presentation",
+      "content": "<header> Please say the name of the picture you see. </header>\r\n<main class=\"content-horizontal-center content-vertical-center\">\r\n  <img src= \"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.picture }.png\">\r\n</main>\r\n<footer>\r\n  Experimenter, please press \"y\" if they named the picture, and \"n\" if they did not.\r\n</footer>",
+      "_tab": "Content",
+      "timeout": ""
+    },
+    "9": {
+      "id": "9",
+      "type": "lab.flow.Loop",
+      "children": [
+        "1"
+      ],
+      "templateParameters": {
+        "columns": [
+          {
+            "name": "timing",
+            "type": "string"
+          },
+          {
+            "name": "time_duration",
+            "type": "string"
+          }
+        ],
+        "rows": [
+          [
+            "immediate",
+            "0"
+          ],
+          [
+            "delayed",
+            "15000"
+          ]
+        ]
+      },
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "title": "Counterbalancing Loop",
+      "shuffle": true,
+      "_collapsed": false
+    },
+    "10": {
+      "id": "10",
+      "type": "lab.html.Screen",
+      "responses": {
+        "rows": [
+          [
+            "b to continue",
+            "keypress",
+            "",
+            "b"
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "title": "Welcome",
+      "content": "<header>\r\n  <h1>Welcome!</h1>\r\n</header>\r\n<main> \r\n  <p>We are going to play a picture game with you. We want you to show us your memory for some pictures. You will also sometimes wear a cool space helmet! </p>\r\n  <br>\r\n  <br>\r\n  \r\n</main>\r\n<footer>\r\n  Press the \"b\" key to continue.\r\n</footer>\r\n",
+      "_tab": "Content"
+    },
+    "11": {
+      "id": "11",
+      "type": "lab.canvas.Screen",
+      "content": [
+        {
+          "type": "i-text",
+          "originX": "center",
+          "originY": "center",
+          "left": 0,
+          "top": 0,
+          "width": 752.44,
+          "height": 287.83,
+          "fill": "black",
+          "stroke": null,
+          "strokeWidth": 1,
+          "strokeDashArray": null,
+          "strokeLineCap": "butt",
+          "strokeLineJoin": "round",
+          "strokeMiterLimit": 10,
+          "scaleX": 1,
+          "scaleY": 1,
+          "angle": 0,
+          "flipX": false,
+          "flipY": false,
+          "opacity": 1,
+          "shadow": null,
+          "visible": true,
+          "clipTo": null,
+          "backgroundColor": "",
+          "fillRule": "nonzero",
+          "globalCompositeOperation": "source-over",
+          "transformMatrix": null,
+          "skewX": 0,
+          "skewY": 0,
+          "text": "Great work! When you saw the pictures, you knew \nyou were supposed to try to remember them, \nso you could point to the same ones afterward, right?\nWhat did you do to remember them? How did you go\nabout trying to keep them straight in your head?\n\nExperimenter, please press the \"b\" key to move on.",
+          "fontSize": 32,
+          "fontWeight": "normal",
+          "fontFamily": "sans-serif",
+          "fontStyle": "normal",
+          "lineHeight": 1.16,
+          "underline": false,
+          "overline": false,
+          "linethrough": false,
+          "textAlign": "center",
+          "textBackgroundColor": "",
+          "charSpacing": 0,
+          "id": "64",
+          "styles": {}
+        }
+      ],
+      "responses": {
+        "rows": [
+          [
+            "end_strategy",
+            "keypress",
+            "",
+            "b"
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "viewport": [
+        800,
+        600
+      ],
+      "title": "Strategies",
+      "_tab": "Content"
+    },
+    "12": {
+      "id": "12",
+      "type": "lab.canvas.Screen",
+      "content": [
+        {
+          "type": "i-text",
+          "originX": "center",
+          "originY": "center",
+          "left": 0,
+          "top": 0,
+          "width": 158.95,
+          "height": 36.16,
+          "fill": "black",
+          "stroke": null,
+          "strokeWidth": 1,
+          "strokeDashArray": null,
+          "strokeLineCap": "butt",
+          "strokeLineJoin": "round",
+          "strokeMiterLimit": 10,
+          "scaleX": 1,
+          "scaleY": 1,
+          "angle": 0,
+          "flipX": false,
+          "flipY": false,
+          "opacity": 1,
+          "shadow": null,
+          "visible": true,
+          "clipTo": null,
+          "backgroundColor": "",
+          "fillRule": "nonzero",
+          "globalCompositeOperation": "source-over",
+          "transformMatrix": null,
+          "skewX": 0,
+          "skewY": 0,
+          "text": "Visor down!",
+          "fontSize": 32,
+          "fontWeight": "normal",
+          "fontFamily": "sans-serif",
+          "fontStyle": "normal",
+          "lineHeight": 1.16,
+          "underline": false,
+          "overline": false,
+          "linethrough": false,
+          "textAlign": "center",
+          "textBackgroundColor": "",
+          "charSpacing": 0,
+          "id": "74",
+          "styles": {}
+        }
+      ],
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "determine delay",
+              "message": "before:prepare",
+              "code": "this.options.skip = (this.aggregateParameters.timing == 'immediate')"
+            }
+          ]
+        ]
+      },
+      "viewport": [
+        800,
+        600
+      ],
+      "title": "Visor Instruction for delay",
+      "_tab": "Content",
+      "timeout": "${ parameters.time_duration }"
+    },
+    "13": {
+      "id": "13",
+      "type": "lab.canvas.Screen",
+      "content": [
+        {
+          "type": "i-text",
+          "originX": "center",
+          "originY": "center",
+          "left": 0,
+          "top": 0,
+          "width": 699,
+          "height": 371.72,
+          "fill": "black",
+          "stroke": null,
+          "strokeWidth": 1,
+          "strokeDashArray": null,
+          "strokeLineCap": "butt",
+          "strokeLineJoin": "round",
+          "strokeMiterLimit": 10,
+          "scaleX": 1,
+          "scaleY": 1,
+          "angle": 0,
+          "flipX": false,
+          "flipY": false,
+          "opacity": 1,
+          "shadow": null,
+          "visible": true,
+          "clipTo": null,
+          "backgroundColor": "",
+          "fillRule": "nonzero",
+          "globalCompositeOperation": "source-over",
+          "transformMatrix": null,
+          "skewX": 0,
+          "skewY": 0,
+          "text": "Please spend some time getting comfortable in\nthe space helmet. We want you to try putting the \nvisor down. Then, we want you to raise the visor. \nWe will say, \"visor up!\". \nLet's give it a try.\n\n\nExperimenter, please press the \"b\" key when you\nare ready to move on.",
+          "fontSize": 32,
+          "fontWeight": "normal",
+          "fontFamily": "sans-serif",
+          "fontStyle": "normal",
+          "lineHeight": 1.16,
+          "underline": false,
+          "overline": false,
+          "linethrough": false,
+          "textAlign": "center",
+          "textBackgroundColor": "",
+          "charSpacing": 0,
+          "id": "82",
+          "styles": {}
+        }
+      ],
+      "responses": {
+        "rows": [
+          [
+            "end visor practice",
+            "keypress",
+            "",
+            "b"
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "viewport": [
+        800,
+        600
+      ],
+      "title": "Visor Practice",
+      "_tab": "Content"
+    },
+    "14": {
+      "id": "14",
+      "type": "lab.canvas.Screen",
+      "content": [
+        {
+          "type": "i-text",
+          "originX": "center",
+          "originY": "center",
+          "left": 0,
+          "top": 0,
+          "width": 504.73,
+          "height": 120.05,
+          "fill": "black",
+          "stroke": null,
+          "strokeWidth": 1,
+          "strokeDashArray": null,
+          "strokeLineCap": "butt",
+          "strokeLineJoin": "round",
+          "strokeMiterLimit": 10,
+          "scaleX": 1,
+          "scaleY": 1,
+          "angle": 0,
+          "flipX": false,
+          "flipY": false,
+          "opacity": 1,
+          "shadow": null,
+          "visible": true,
+          "clipTo": null,
+          "backgroundColor": "",
+          "fillRule": "nonzero",
+          "globalCompositeOperation": "source-over",
+          "transformMatrix": null,
+          "skewX": 0,
+          "skewY": 0,
+          "text": "Thank you for being in the experiment!\n\nPress \"B\" to exit.",
+          "fontSize": 32,
+          "fontWeight": "normal",
+          "fontFamily": "Times New Roman",
+          "fontStyle": "normal",
+          "lineHeight": 1.16,
+          "underline": false,
+          "overline": false,
+          "linethrough": false,
+          "textAlign": "center",
+          "textBackgroundColor": "",
+          "charSpacing": 0,
+          "id": "3",
+          "styles": {}
+        }
+      ],
+      "responses": {
+        "rows": [
+          [
+            "exit screen",
+            "keypress",
+            "",
+            "b"
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "viewport": [
+        800,
+        600
+      ],
+      "title": "Goodbye Screen",
+      "_tab": "Content"
+    },
+    "15": {
+      "id": "15",
+      "type": "lab.flow.Loop",
+      "children": [
+        "16"
+      ],
+      "templateParameters": {
+        "columns": [
+          {
+            "name": "span_length",
+            "type": "string"
+          },
+          {
+            "name": "trial type",
+            "type": "string"
+          },
+          {
+            "name": "",
+            "type": "string"
+          }
+        ],
+        "rows": [
+          [
+            "2",
+            "point and name",
+            ""
+          ],
+          [
+            "2",
+            "point and name",
+            ""
+          ],
+          [
+            "3",
+            "point and name",
+            ""
+          ],
+          [
+            "3",
+            "point and name",
+            ""
+          ],
+          [
+            "4",
+            "point and name",
+            ""
+          ],
+          [
+            "4",
+            "point and name",
+            ""
+          ],
+          [
+            "5",
+            "point and name",
+            ""
+          ],
+          [
+            "5",
+            "point and name",
+            ""
+          ]
+        ]
+      },
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "title": "Point and Name task",
+      "_tab": "Scripts",
+      "_collapsed": false
+    },
+    "16": {
+      "id": "16",
+      "type": "lab.flow.Sequence",
+      "children": [
+        "17",
+        "18",
+        "20",
+        "21"
+      ],
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "title": "Trial sequence for Point and Name",
+      "_tab": "Content"
+    },
+    "17": {
+      "id": "17",
+      "type": "lab.html.Screen",
+      "responses": {
+        "rows": [
+          [
+            "continue",
+            "click",
+            "button#continue",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "title": "Get-set-go",
+      "content": "<main class=\"content-vertical-center content-horizontal-center\">\n  <div style=\"max-width: 600px\">\n    <h2>Ready?</h2>\n    <p>In a moment, we're going to show you some pictures. Please name each picture <strong> out loud </strong> as you see it. Then try to remember them as best you can. You'll be asked to remember them in the order in which you saw them. When you point to them, please say the name of the picture out loud.</p>\n    <p>When you're ready, please press <kbd>Continue</kbd> below.\n  </div>\n</main>\n<footer class=\"content-horizontal-right\">\n  <button id=\"continue\">\n    Continue &rarr;\n  </button>\n</footer>",
+      "_tab": "Content"
+    },
+    "18": {
+      "id": "18",
+      "type": "lab.flow.Loop",
+      "children": [
+        "19"
+      ],
+      "templateParameters": {
+        "columns": [
+          {
+            "name": "picture",
+            "type": "string"
+          }
+        ],
+        "rows": [
+          [
+            "apple"
+          ],
+          [
+            "flag"
+          ],
+          [
+            "comb"
+          ],
+          [
+            "owl"
+          ],
+          [
+            "moon"
+          ],
+          [
+            "pot"
+          ],
+          [
+            "flower"
+          ]
+        ]
+      },
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "Generate span",
+              "message": "before:prepare",
+              "code": "/*\n  This code generates the stimulus sequence manually\n  from the stimuli specified in the loop content.\n  This wouldn't usually be necessary: The loop\n  can sample and shuffle stimuli itself; however,\n  doing it ourselves gives us a bit more control.\n  Specifically, it's (slightly) easier to capture \n  and store the sequence of digits (see below).\n*/\n\n// Subsample the loop parameters by drawing randomly\n// from the loop contents\nthis.options.templateParameters = this.random.sample(\n  this.options.templateParameters,\n  this.aggregateParameters.span_length\n)\n\n// Extract the presented stimuli and store them seperately,\n// as a feature of the overall trial sequence.\nthis.parent.options.parameters.span = \n  this.options.templateParameters.map(\n    function(repetition) { return repetition.picture }\n  )"
+            }
+          ]
+        ]
+      },
+      "title": "Learning phase",
+      "shuffle": false,
+      "_tab": "Content"
+    },
+    "19": {
+      "id": "19",
+      "type": "lab.html.Screen",
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "Disable data logging",
+              "message": "before:prepare",
+              "code": "// We don't need screen-by-screen data for\n// the stimulus presentation\nthis.options.datacommit = false"
+            }
+          ]
+        ]
+      },
+      "title": "Picture presentation",
+      "content": "<main\n  class=\"content-horizontal-center content-vertical-center\"\n>\n  \n  <img src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.picture }.png\">\n\n</main>\n<footer>\n  Please point to the picture, say the name out loud, and memorize the picture presented above.\n</footer>",
+      "_tab": "Content",
+      "timeout": "1500"
+    },
+    "20": {
+      "id": "20",
+      "type": "lab.canvas.Screen",
+      "content": [
+        {
+          "type": "i-text",
+          "originX": "center",
+          "originY": "center",
+          "left": 0,
+          "top": 0,
+          "width": 158.95,
+          "height": 36.16,
+          "fill": "black",
+          "stroke": null,
+          "strokeWidth": 1,
+          "strokeDashArray": null,
+          "strokeLineCap": "butt",
+          "strokeLineJoin": "round",
+          "strokeMiterLimit": 10,
+          "scaleX": 1,
+          "scaleY": 1,
+          "angle": 0,
+          "flipX": false,
+          "flipY": false,
+          "opacity": 1,
+          "shadow": null,
+          "visible": true,
+          "clipTo": null,
+          "backgroundColor": "",
+          "fillRule": "nonzero",
+          "globalCompositeOperation": "source-over",
+          "transformMatrix": null,
+          "skewX": 0,
+          "skewY": 0,
+          "text": "Visor down!",
+          "fontSize": 32,
+          "fontWeight": "normal",
+          "fontFamily": "sans-serif",
+          "fontStyle": "normal",
+          "lineHeight": 1.16,
+          "underline": false,
+          "overline": false,
+          "linethrough": false,
+          "textAlign": "center",
+          "textBackgroundColor": "",
+          "charSpacing": 0,
+          "id": "74",
+          "styles": {}
+        }
+      ],
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "viewport": [
+        800,
+        600
+      ],
+      "title": "Visor Instruction for delay",
+      "_tab": "Content",
+      "timeout": "15000"
+    },
+    "21": {
+      "id": "21",
+      "type": "lab.html.Screen",
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "Handle button responses",
+              "message": "before:prepare",
+              "code": "// Create an empty array that collects responses\nthis.data.responses = []\n\nconst updateButtons = () => {\n  document\n    .querySelectorAll('button')\n    .forEach(\n      button => button.disabled = \n        this.data.responses.includes(button.attributes.name.value)\n    )\n}\n\n// Setup handler for button clicks\nthis.options.events['click button'] = function(event) {\n  // Which button was clicked?\n  const button = event.currentTarget.attributes.name.value\n\n  // Terminate screen if participant is done,\n  // otherwise log response, deactivate button,\n  // and continue.\n  if (button === 'done') {\n    this.end('done')\n  } else if (button === 'undo') {\n    // Remove last response\n    this.data.responses.pop()\n\n    //Update buttons\n    updateButtons()\n  } else {\n    // Add response to data\n    this.data.responses.push(button)\n    \n     //Update buttons\n    updateButtons()\n  }\n}\n    \nthis.options.parameters.options = this.random.shuffle(\n  ['apple', 'flag', 'comb', 'owl', 'moon', 'pot', 'flower'])"
+            }
+          ],
+          [
+            {
+              "title": "Code veracity of answer",
+              "message": "after:end",
+              "code": "// The response was correct if every presented stimulus\n// matched the corresponding response\n// (JavaScript, sadly, can't directly compare two arrays)\nthis.data.correct = this.aggregateParameters.span.every(\n  (picture, index) => picture === this.data.responses[index]\n)\n// Save veracity of individual positions\nthis.data.correctPositions = this.aggregateParameters.span.map(\n  (picture, index) => picture === this.data.responses[index]\n)"
+            }
+          ]
+        ]
+      },
+      "title": "Recall",
+      "content": "<main class=\"content-horizontal-center content-vertical-center\">\n  <!-- Table styles are specified in the overall study CSS,\n       please see study options. This screen also includes\n       a fair amount of logic, which is visible in the scripts\n       tab. Please be invited to ask the authors if you have\n       any questions!\n  -->\n  <table class=\"table-plain table-span-recall\">\n    <tr>\n      <td>\n        <button name=\"${ parameters.options[0] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[0] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[1] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[1] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[2] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[2] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[3] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[3] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[4] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[4] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[5] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[5] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[6] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[6] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n          \n    </tr>\n    <tr>\n      <td colspan=\"7\">\n        <button name=\"undo\">\n          Undo ?\n        </button>\n        <button name=\"done\">\n          Done &rarr;\n        </button>\n      </td>\n    </tr>\n  </table>\n</main>\n<footer>\n  <strong> Visor up! </strong> Please point to, and name out loud, the pictures you just saw, in the order that you saw them. <br>\n  When you have chosen all you can remember, please click <kbd>Done</kbd> to continue.\n</footer>",
+      "_tab": "Content"
+    },
+    "22": {
+      "id": "22",
+      "type": "lab.flow.Loop",
+      "children": [
+        "23"
+      ],
+      "templateParameters": {
+        "columns": [
+          {
+            "name": "span_length",
+            "type": "string"
+          },
+          {
+            "name": "trial type",
+            "type": "string"
+          },
+          {
+            "name": "",
+            "type": "string"
+          }
+        ],
+        "rows": [
+          [
+            "2",
+            "practice",
+            ""
+          ],
+          [
+            "2",
+            "practice",
+            ""
+          ]
+        ]
+      },
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "title": "Practice picture span task",
+      "_tab": "Content",
+      "_collapsed": false
+    },
+    "23": {
+      "id": "23",
+      "type": "lab.flow.Sequence",
+      "children": [
+        "24",
+        "25",
+        "28"
+      ],
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "title": "Trial sequence for Recall",
+      "_tab": "Content"
+    },
+    "24": {
+      "id": "24",
+      "type": "lab.html.Screen",
+      "responses": {
+        "rows": [
+          [
+            "continue",
+            "click",
+            "button#continue",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "title": "Get-set-go",
+      "content": "<main class=\"content-vertical-center content-horizontal-center\">\n  <div style=\"max-width: 600px\">\n    <h2>Ready?</h2>\n    <p>In a moment, we're going to show you some pictures. Please try to remember them as best you can. You'll be asked to remember them in the same order in which you saw them, by pointing at the ones you saw.</p>\n    <p>When you're ready, please press <kbd>Continue</kbd> below.\n  </div>\n</main>\n<footer class=\"content-horizontal-right\">\n  <button id=\"continue\">\n    Continue &rarr;\n  </button>\n</footer>",
+      "_tab": "Content"
+    },
+    "25": {
+      "id": "25",
+      "type": "lab.flow.Loop",
+      "children": [
+        "26"
+      ],
+      "templateParameters": {
+        "columns": [
+          {
+            "name": "picture",
+            "type": "string"
+          }
+        ],
+        "rows": [
+          [
+            "apple"
+          ],
+          [
+            "flag"
+          ],
+          [
+            "comb"
+          ],
+          [
+            "owl"
+          ],
+          [
+            "moon"
+          ],
+          [
+            "pot"
+          ],
+          [
+            "flower"
+          ]
+        ]
+      },
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "Generate span",
+              "message": "before:prepare",
+              "code": "/*\n  This code generates the stimulus sequence manually\n  from the stimuli specified in the loop content.\n  This wouldn't usually be necessary: The loop\n  can sample and shuffle stimuli itself; however,\n  doing it ourselves gives us a bit more control.\n  Specifically, it's (slightly) easier to capture \n  and store the sequence of digits (see below).\n*/\n\n// Subsample the loop parameters by drawing randomly\n// from the loop contents\nthis.options.templateParameters = this.random.sample(\n  this.options.templateParameters,\n  this.aggregateParameters.span_length\n)\n\n// Extract the presented stimuli and store them seperately,\n// as a feature of the overall trial sequence.\nthis.parent.options.parameters.span = \n  this.options.templateParameters.map(\n    function(repetition) { return repetition.picture }\n  )"
+            }
+          ]
+        ]
+      },
+      "title": "Learning phase",
+      "shuffle": false,
+      "_tab": "Content"
+    },
+    "26": {
+      "id": "26",
+      "type": "lab.html.Screen",
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "Disable data logging",
+              "message": "before:prepare",
+              "code": "// We don't need screen-by-screen data for\n// the stimulus presentation\nthis.options.datacommit = false"
+            }
+          ]
+        ]
+      },
+      "title": "Picture presentation",
+      "content": "<main\n  class=\"content-horizontal-center content-vertical-center\"\n>\n  \n  <img src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.picture }.png\">\n\n</main>\n<footer>\n  Please memorize the picture presented above.\n</footer>",
+      "_tab": "Content",
+      "timeout": "1500"
+    },
+    "28": {
+      "id": "28",
+      "type": "lab.html.Screen",
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "Handle button responses",
+              "message": "before:prepare",
+              "code": "// Create an empty array that collects responses\nthis.data.responses = []\n\nconst updateButtons = () => {\n  document\n    .querySelectorAll('button')\n    .forEach(\n      button => button.disabled = \n        this.data.responses.includes(button.attributes.name.value)\n    )\n}\n\n// Setup handler for button clicks\nthis.options.events['click button'] = function(event) {\n  // Which button was clicked?\n  const button = event.currentTarget.attributes.name.value\n\n  // Terminate screen if participant is done,\n  // otherwise log response, deactivate button,\n  // and continue.\n  if (button === 'done') {\n    this.end('done')\n  } else if (button === 'undo') {\n    // Remove last response\n    this.data.responses.pop()\n\n    //Update buttons\n    updateButtons()\n  } else {\n    // Add response to data\n    this.data.responses.push(button)\n    \n     //Update buttons\n    updateButtons()\n  }\n}\n    \nthis.options.parameters.options = this.random.shuffle(\n  ['apple', 'flag', 'comb', 'owl', 'moon', 'pot', 'flower'])"
+            }
+          ],
+          [
+            {
+              "title": "Code veracity of answer",
+              "message": "after:end",
+              "code": "// The response was correct if every presented stimulus\n// matched the corresponding response\n// (JavaScript, sadly, can't directly compare two arrays)\nthis.data.correct = this.aggregateParameters.span.every(\n  (picture, index) => picture === this.data.responses[index]\n)\n// Save veracity of individual positions\nthis.data.correctPositions = this.aggregateParameters.span.map(\n  (picture, index) => picture === this.data.responses[index]\n)"
+            }
+          ]
+        ]
+      },
+      "title": "Recall",
+      "content": "<main class=\"content-horizontal-center content-vertical-center\">\n  <!-- Table styles are specified in the overall study CSS,\n       please see study options. This screen also includes\n       a fair amount of logic, which is visible in the scripts\n       tab. Please be invited to ask the authors if you have\n       any questions!\n  -->\n  <table class=\"table-plain table-span-recall\">\n    <tr>\n      <td>\n        <button name=\"${ parameters.options[0] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[0] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[1] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[1] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[2] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[2] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[3] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[3] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[4] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[4] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[5] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[5] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n      <td>\n        <button name=\"${ parameters.options[6] }\">\n          <img \n            src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.options[6] }.png\"\n            style=\"max-width: 100px\"\n          >\n        </button>\n      </td>\n          \n    </tr>\n    <tr>\n      <td colspan=\"7\">\n        <button name=\"undo\">\n          Undo ?\n        </button>\n        <button name=\"done\">\n          Done &rarr;\n        </button>\n      </td>\n    </tr>\n  </table>\n</main>\n<footer>\n  Please point to the pictures you just saw, in the order that you saw them.<br>\n  When you have chosen all you can remember, please click <kbd>Done</kbd> to continue.\n</footer>",
+      "_tab": "Content"
+    },
+    "29": {
+      "id": "29",
+      "type": "lab.canvas.Screen",
+      "content": [
+        {
+          "type": "i-text",
+          "originX": "center",
+          "originY": "center",
+          "left": 0,
+          "top": 0,
+          "width": 555.44,
+          "height": 203.94,
+          "fill": "black",
+          "stroke": null,
+          "strokeWidth": 1,
+          "strokeDashArray": null,
+          "strokeLineCap": "butt",
+          "strokeLineJoin": "round",
+          "strokeMiterLimit": 10,
+          "scaleX": 1,
+          "scaleY": 1,
+          "angle": 0,
+          "flipX": false,
+          "flipY": false,
+          "opacity": 1,
+          "shadow": null,
+          "visible": true,
+          "clipTo": null,
+          "backgroundColor": "",
+          "fillRule": "nonzero",
+          "globalCompositeOperation": "source-over",
+          "transformMatrix": null,
+          "skewX": 0,
+          "skewY": 0,
+          "text": "Do you understand this game? Please let us\nknow if you have any questions.\n\n\nPlease press \"b\" to move on.",
+          "fontSize": 32,
+          "fontWeight": "normal",
+          "fontFamily": "sans-serif",
+          "fontStyle": "normal",
+          "lineHeight": 1.16,
+          "underline": false,
+          "overline": false,
+          "linethrough": false,
+          "textAlign": "center",
+          "textBackgroundColor": "",
+          "charSpacing": 0,
+          "id": "118",
+          "styles": {}
+        }
+      ],
+      "responses": {
+        "rows": [
+          [
+            "continue to task",
+            "keypress",
+            "",
+            "b"
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "viewport": [
+        800,
+        600
+      ],
+      "title": "Ready to begin",
+      "_tab": "Content"
+    },
+    "31": {
+      "id": "31",
+      "type": "lab.html.Form",
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "title": "Participant ID",
+      "content": "<main class=\"content-horizontal-center content-vertical-center\">\r\n  <div class=\"w-m text-left\">\r\n    <h2>Welcome!</h2>\r\n    <hr>\r\n    <p class=\"text-muted\">\r\n      Please allow the experimenter to enter\r\n      a participant <code>id</code>!\r\n    </p> \r\n    <form class=\"text-right\">\r\n      <input type=\"number\" name=\"participant_id\" class=\"w-100\">\r\n      <button type=\"submit\">\r\n        Continue ?\r\n      </button>\r\n    </form>\r\n  </div>\r\n</main>"
+    },
+    "32": {
+      "id": "32",
+      "type": "lab.flow.Sequence",
+      "children": [
+        "8",
+        "34"
+      ],
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "",
+              "code": ""
+            }
+          ]
+        ]
+      },
+      "title": "Naming trial"
+    },
+    "34": {
+      "id": "34",
+      "type": "lab.html.Form",
+      "responses": {
+        "rows": [
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      },
+      "messageHandlers": {
+        "rows": [
+          [
+            {
+              "title": "",
+              "message": "before:prepare",
+              "code": "// Skip this screen if the child identified the object correctly\n// (the last response was yes)\nconst state = this.options.datastore.state\nthis.options.skip = state.response === 'yes'"
+            }
+          ]
+        ]
+      },
+      "title": "(Optional) naming",
+      "content": "<header> Please say the name of the picture you see. </header>\n<main class=\"content-horizontal-center content-vertical-center\">\n  \n  <div class=\"w-m text-left\">\n    <img src=\"https://cdn.rawgit.com/lsuemily/PictureSpanTask/7ca73f48/images/${ parameters.picture }.png\">\n    <p>Can you tell me what this is?</p> \n    <form class=\"text-right\">\n      <input type=\"text\" name=\"response\" class=\"w-100\">\n      <button type=\"submit\">\n        Done\n      </button>\n    </form>\n  </div>\n\n</main>\n<footer>\n</footer>",
+      "_tab": "Content",
+      "tardy": true
+    },
+    "root": {
+      "id": "root",
+      "title": "root",
+      "type": "lab.flow.Sequence",
+      "children": [
+        "31",
+        "10",
+        "13",
+        "22",
+        "29",
+        "9",
+        "7",
+        "15",
+        "11",
+        "14"
+      ],
+      "plugins": [
+        {
+          "type": "lab.plugins.Metadata"
+        }
+      ],
+      "metadata": {
+        "title": "Picture span",
+        "description": "This study implements a short-term memory test. Participants are asked to recall a series of pictures in sequence.",
+        "repository": "",
+        "contributors": "Emily Elliot"
+      }
+    }
+  },
+  "files": {
+    "files": {
+      "index.html": {
+        "content": "data:text/html,%3C!doctype%20html%3E%0A%3Chtml%3E%0A%3Chead%3E%0A%20%20%3Cmeta%20charset%3D%22utf-8%22%3E%0A%20%20%3Ctitle%3EExperiment%3C%2Ftitle%3E%0A%20%20%3C!--%20lab.js%20library%20and%20default%20styles%20--%3E%0A%20%20%3Cscript%20src%3D%22lib%2Flab.js%22%3E%3C%2Fscript%3E%0A%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22lib%2Flab.css%22%3E%0A%20%20%3C!--%20study%20code%20and%20styles%20--%3E%0A%20%20%3Cscript%20defer%20src%3D%22script.js%22%3E%3C%2Fscript%3E%0A%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22style.css%22%3E%0A%3C%2Fhead%3E%0A%3Cbody%3E%0A%20%20%3C!--%20If%20you'd%20rather%20have%20a%20container%20with%20a%20fixed%20width%0A%20%20%20%20%20%20%20and%20variable%20height%2C%20try%20removing%20the%20fullscreen%20class%20below%20--%3E%0A%20%20%3Cdiv%20class%3D%22container%20fullscreen%22%20data-labjs-section%3D%22main%22%3E%0A%20%20%20%20%3Cmain%20class%3D%22content-vertical-center%20content-horizontal-center%22%3E%0A%20%20%20%20%20%20%3Cdiv%3E%0A%20%20%20%20%20%20%20%20%3Ch2%3ELoading%20Experiment%3C%2Fh2%3E%0A%20%20%20%20%20%20%20%20%3Cp%3EThe%20experiment%20is%20loading%20and%20should%20start%20in%20a%20few%20seconds%3C%2Fp%3E%0A%20%20%20%20%20%20%3C%2Fdiv%3E%0A%20%20%20%20%3C%2Fmain%3E%0A%20%20%3C%2Fdiv%3E%0A%3C%2Fbody%3E%0A%3C%2Fhtml%3E%0A",
+        "permanent": true
+      },
+      "style.css": {
+        "content": "data:text/css,%2F*%20Span%20recall%20screen%20*%2F%0Atable.table-span-recall%20%7B%0A%20%20width%3A%20auto%3B%0A%7D%0A%0Atable.table-span-recall%20tr%3Afirst-child%20button%20%7B%0A%20%20width%3A%20150px%3B%0A%20%20height%3A%20180px%3B%0A%20%20font-size%3A%202.25rem%3B%0A%20%20%2F*%20Animate%20opacity%20*%2F%0A%20%20transition%3A%20opacity%202.25s%20ease-in-out%200%3B%0A%7D%0A%0A%0Atable.table-span-recall%20tr%3Afirst-child%20button%3Adisabled%20%7B%0A%20%20opacity%3A%200.25%3B%0A%7D",
+        "permanent": true
+      }
+    },
+    "bundledFiles": {
+      "lib/lab.js": {
+        "type": "application/javascript"
+      },
+      "lib/lab.js.map": {
+        "type": "text/plain"
+      },
+      "lib/lab.css": {
+        "type": "text/css"
+      },
+      "lib/loading.svg": {
+        "type": "image/svg+xml"
+      }
+    }
+  }
+}
