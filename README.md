@@ -1,5 +1,5 @@
 # PictureSpanTask
-creating a picture span task in lab.js with the help of Felix Henninger! Check out the lab.js site here:
+a picture span task in lab.js with the help of Felix Henninger, with serial position scoring! Check out the lab.js site here:
 https://github.com/FelixHenninger/lab.js
 
 
